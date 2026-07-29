@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
@@ -15,6 +15,16 @@ export default function ScheduleScreen({ navigation }) {
   const { filteredItems, roomOptions, roomFilter, setRoomFilter, dateFilter, setDateFilter, loading, error } =
     useJadwal();
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Reset filters on blur so re-entering this screen always starts from
+  // "show everything, today" instead of whatever filter was left applied.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      setRoomFilter(null);
+      setDateFilter(new Date());
+    });
+    return unsubscribe;
+  }, [navigation, setRoomFilter, setDateFilter]);
 
   return (
     <SafeAreaView style={styles.container}>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -45,7 +45,7 @@ export default function BookingScreen({ navigation }) {
   const { rooms } = useRuangan();
   const roomOptions = rooms.map((r) => r.nama_ruangan);
 
-  const [divisi, setDivisi] = useState(DIVISI_OPTIONS[0]);
+  const [divisi, setDivisi] = useState('');
   const [ruangan, setRuangan] = useState('');
   const [tanggal, setTanggal] = useState(new Date());
   const [jamMulai, setJamMulai] = useState(new Date());
@@ -57,7 +57,22 @@ export default function BookingScreen({ navigation }) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const canSubmit = ruangan.length > 0 && jumlahPeserta.length > 0 && !submitting;
+  const canSubmit = divisi.length > 0 && ruangan.length > 0 && jumlahPeserta.length > 0 && !submitting;
+
+  // Reset the whole form on blur so navigating away and back (or submitting
+  // then coming back later) never shows leftover input from last time.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      setDivisi('');
+      setRuangan('');
+      setTanggal(new Date());
+      setJamMulai(new Date());
+      setJamSelesai(new Date());
+      setJumlahPeserta('');
+      setShowSuccess(false);
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -128,6 +143,7 @@ export default function BookingScreen({ navigation }) {
           <Text style={styles.label}>Divisi</Text>
           <View style={styles.pickerWrap}>
             <Picker selectedValue={divisi} onValueChange={setDivisi}>
+              <Picker.Item label="Pilih divisi..." value="" />
               {DIVISI_OPTIONS.map((d) => (
                 <Picker.Item key={d} label={d} value={d} />
               ))}
