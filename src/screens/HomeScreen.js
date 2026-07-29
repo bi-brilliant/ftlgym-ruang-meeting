@@ -1,4 +1,5 @@
 import { ActivityIndicator, FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
 import { useJadwal } from '../hooks/useJadwal';
 import ScheduleCard from '../components/ScheduleCard';
@@ -45,11 +46,11 @@ export default function HomeScreen({ navigation }) {
 
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Schedule')}>
-          <Text style={styles.navIcon}>🗓️</Text>
+          <Ionicons name="calendar-outline" size={22} color="#1F2937" />
           <Text style={styles.navLabel}>Jadwal{'\n'}Ruang Meeting</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Booking')}>
-          <Text style={styles.navIcon}>✏️</Text>
+          <Ionicons name="create-outline" size={22} color="#1F2937" />
           <Text style={styles.navLabel}>Booking{'\n'}Ruang Meeting</Text>
         </TouchableOpacity>
       </View>

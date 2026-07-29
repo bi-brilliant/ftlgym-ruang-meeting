@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 import { useJadwal } from '../hooks/useJadwal';
 
 const DIVISI_OPTIONS = ['IT', 'HR', 'Finance', 'Marketing', 'Operasional'];
@@ -33,11 +34,18 @@ export default function BookingScreen({ navigation }) {
     setShowSuccess(true);
   };
 
+  // Sanitize: strip anything that isn't a digit, whether typed or pasted -
+  // onChangeText fires with the full resulting text either way, so filtering
+  // here catches paste too, not just the on-screen numeric keyboard.
+  const handleJumlahPesertaChange = (text) => {
+    setJumlahPeserta(text.replace(/[^0-9]/g, ''));
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.back}>{'←'}</Text>
+          <Ionicons name="arrow-back" size={22} color="#1F2937" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Booking Ruang Meeting</Text>
       </View>
@@ -112,7 +120,7 @@ export default function BookingScreen({ navigation }) {
           style={styles.fieldButton}
           keyboardType="number-pad"
           value={jumlahPeserta}
-          onChangeText={setJumlahPeserta}
+          onChangeText={handleJumlahPesertaChange}
           placeholder="Contoh: 10"
         />
 
@@ -124,7 +132,7 @@ export default function BookingScreen({ navigation }) {
       <Modal transparent visible={showSuccess} animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalIcon}>✅</Text>
+            <Ionicons name="checkmark-circle" size={40} color="#22C55E" style={styles.modalIcon} />
             <Text style={styles.modalTitle}>Sukses</Text>
             <Text style={styles.modalBody}>Booking ruang meeting berhasil diajukan.</Text>
             <TouchableOpacity
