@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Modal,
@@ -15,7 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import { useJadwal } from '../hooks/useJadwal';
+import { useRuangan } from '../hooks/useRuangan';
+import { submitBooking } from '../api/booking';
 
 const DIVISI_OPTIONS = ['IT', 'HR', 'Finance', 'Marketing', 'Operasional'];
 
@@ -25,13 +27,23 @@ function formatDate(d) {
 function formatTime(d) {
   return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 }
+function toISODate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function toHHMM(d) {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 function isToday(d) {
   const now = new Date();
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
 }
 
 export default function BookingScreen({ navigation }) {
-  const { roomOptions } = useJadwal();
+  const { rooms } = useRuangan();
+  const roomOptions = rooms.map((r) => r.nama_ruangan);
 
   const [divisi, setDivisi] = useState(DIVISI_OPTIONS[0]);
   const [ruangan, setRuangan] = useState('');
@@ -43,13 +55,27 @@ export default function BookingScreen({ navigation }) {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const canSubmit = ruangan.length > 0 && jumlahPeserta.length > 0;
+  const canSubmit = ruangan.length > 0 && jumlahPeserta.length > 0 && !submitting;
 
-  // NOTE: belum ada endpoint submit booking yang terkonfirmasi dari desain -
-  // untuk sekarang submit di-mock (tidak hit API), tampilkan alert sukses.
-  const handleSubmit = () => {
-    setShowSuccess(true);
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      await submitBooking({
+        divisi,
+        ruangan,
+        tanggal: toISODate(tanggal),
+        jam_mulai: toHHMM(jamMulai),
+        jam_selesai: toHHMM(jamSelesai),
+        jumlah_peserta: jumlahPeserta,
+      });
+      setShowSuccess(true);
+    } catch (e) {
+      Alert.alert('Gagal', e.response?.data?.message ?? e.message ?? 'Booking gagal diajukan.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Sanitize: strip anything that isn't a digit, whether typed or pasted -
@@ -161,7 +187,11 @@ export default function BookingScreen({ navigation }) {
             onPress={handleSubmit}
             disabled={!canSubmit}
           >
-            <Text style={[styles.submitText, !canSubmit && styles.submitTextDisabled]}>Submit</Text>
+            {submitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={[styles.submitText, !canSubmit && styles.submitTextDisabled]}>Submit</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
