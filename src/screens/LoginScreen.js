@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -15,11 +15,23 @@ import { useAuth } from '../hooks/useAuth';
 
 export default function LoginScreen({ navigation }) {
   const { signIn, loading, error } = useAuth();
-  const [email, setEmail] = useState('yosi@gmail.com');
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const canSubmit = email.trim().length > 0 && password.length > 0 && !loading;
+
+  // Clear the form whenever this screen loses focus (e.g. after a failed
+  // attempt navigates elsewhere, or on logout->Login reset) so it never
+  // shows stale input the next time it's shown.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      setEmail('');
+      setPassword('');
+      setShowPassword(false);
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const handleSignIn = async () => {
     const ok = await signIn(email, password);
