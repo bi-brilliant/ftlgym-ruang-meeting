@@ -80,6 +80,10 @@ export default function BookingDetailModal({ visible, item, onClose, onUpdateSta
                 {item.jumlah_peserta != null ? `${item.jumlah_peserta} orang` : 'Kapasitas tidak diketahui'}
               </Text>
             </View>
+            <View style={styles.detailRow}>
+              <Ionicons name="briefcase-outline" size={16} color="#6B7280" />
+              <Text style={styles.detailText}>{item.divisi ?? 'Divisi tidak tersedia'}</Text>
+            </View>
 
             {editable ? (
               <>
