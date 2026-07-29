@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -18,6 +17,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRuangan } from '../hooks/useRuangan';
 import { submitBooking } from '../api/booking';
+import { showToast } from '../components/Toast';
 
 const DIVISI_OPTIONS = ['IT', 'HR', 'Finance', 'Marketing', 'Operasional'];
 
@@ -87,7 +87,7 @@ export default function BookingScreen({ navigation }) {
       });
       setShowSuccess(true);
     } catch (e) {
-      Alert.alert('Gagal', e.response?.data?.message ?? e.message ?? 'Booking gagal diajukan.');
+      showToast(e.response?.data?.message ?? e.message ?? 'Booking gagal diajukan.');
     } finally {
       setSubmitting(false);
     }
@@ -109,7 +109,7 @@ export default function BookingScreen({ navigation }) {
     setShowStartPicker(Platform.OS === 'ios');
     if (!d) return;
     if (isToday(tanggal) && d < new Date()) {
-      Alert.alert('Waktu tidak valid', 'Waktu mulai meeting tidak boleh sebelum waktu sekarang.');
+      showToast('Waktu mulai meeting tidak boleh sebelum waktu sekarang.');
       return;
     }
     setJamMulai(d);
@@ -119,7 +119,7 @@ export default function BookingScreen({ navigation }) {
     setShowEndPicker(Platform.OS === 'ios');
     if (!d) return;
     if (d <= jamMulai) {
-      Alert.alert('Waktu tidak valid', 'Waktu selesai meeting harus setelah waktu mulai.');
+      showToast('Waktu selesai meeting harus setelah waktu mulai.');
       return;
     }
     setJamSelesai(d);
