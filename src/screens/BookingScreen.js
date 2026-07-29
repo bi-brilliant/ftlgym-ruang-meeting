@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRuangan } from '../hooks/useRuangan';
 import { submitBooking } from '../api/booking';
 import { showToast } from '../components/Toast';
+import { toISODate } from '../utils/date';
 
 const DIVISI_OPTIONS = ['IT', 'HR', 'Finance', 'Marketing', 'Operasional'];
 
@@ -26,12 +27,6 @@ function formatDate(d) {
 }
 function formatTime(d) {
   return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-}
-function toISODate(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
 }
 function toHHMM(d) {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -56,6 +51,7 @@ export default function BookingScreen({ navigation }) {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(0);
 
   const canSubmit = divisi.length > 0 && ruangan.length > 0 && jumlahPeserta.length > 0 && !submitting;
 
@@ -127,7 +123,7 @@ export default function BookingScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+      <View style={styles.header} onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={22} color="#1F2937" />
         </TouchableOpacity>
@@ -136,10 +132,15 @@ export default function BookingScreen({ navigation }) {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={headerHeight}
       >
-        <ScrollView style={styles.form} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          style={styles.form}
+          contentContainerStyle={styles.formContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={styles.label}>Divisi</Text>
           <View style={styles.pickerWrap}>
             <Picker selectedValue={divisi} onValueChange={setDivisi}>
@@ -245,6 +246,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontWeight: '700', fontSize: 15, color: '#1F2937', marginLeft: 12 },
   form: { padding: 20 },
+  formContent: { paddingBottom: 40 },
   label: { fontSize: 12, color: '#6B7280', marginBottom: 4, marginTop: 12 },
   pickerWrap: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, overflow: 'hidden' },
   fieldButton: {

@@ -12,7 +12,7 @@ function formatDate(d) {
 }
 
 export default function ScheduleScreen({ navigation }) {
-  const { filteredItems, roomOptions, roomFilter, setRoomFilter, dateFilter, setDateFilter, loading, error } =
+  const { filteredItems, roomOptions, roomFilter, setRoomFilter, dateFilter, setDateFilter, loading, error, refetch } =
     useJadwal();
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -25,6 +25,12 @@ export default function ScheduleScreen({ navigation }) {
     });
     return unsubscribe;
   }, [navigation, setRoomFilter, setDateFilter]);
+
+  // Refetch on focus so a booking submitted elsewhere shows up here too.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', refetch);
+    return unsubscribe;
+  }, [navigation, refetch]);
 
   return (
     <SafeAreaView style={styles.container}>

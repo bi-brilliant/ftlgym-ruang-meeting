@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,10 +8,18 @@ import ScheduleCard from '../components/ScheduleCard';
 
 export default function HomeScreen({ navigation }) {
   const { user, signOut } = useAuth();
-  const { todayItems, loading, error } = useJadwal();
+  const { todayItems, loading, error, refetch } = useJadwal();
 
   const name = user?.name ?? user?.nama ?? 'Yosi';
   const role = user?.role ?? user?.jabatan ?? 'Web Developer';
+
+  // Home stays mounted underneath Booking on the stack, so a fresh booking
+  // submit won't show up here unless we refetch when this screen regains
+  // focus (e.g. navigating back after a successful submit).
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', refetch);
+    return unsubscribe;
+  }, [navigation, refetch]);
 
   const handleLogout = async () => {
     await signOut();
