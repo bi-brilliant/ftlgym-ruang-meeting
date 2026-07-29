@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { login as loginRequest } from '../api/auth';
 
@@ -9,16 +9,22 @@ function displayNameFromEmail(email) {
   return local.charAt(0).toUpperCase() + local.slice(1);
 }
 
-// ViewModel: handles auth state, exposes a clean interface to the View.
+const AuthContext = createContext(null);
+
+// Holds auth state in one place, shared across every screen via Context -
+// screens on a native-stack navigator stay mounted underneath each other
+// (Login stays alive under Home, etc.), so a plain per-screen hook would give
+// each screen its own disconnected copy of `user`/`isAuthenticated` instead
+// of one source of truth.
 //
 // NOTE: the UAT test login endpoint (`/test/login`) only returns
 // `{ status: "success", data: [] }` on valid credentials - no token, no user
 // object. There is nothing to send as a Bearer token to other endpoints, so
-// this hook treats a "success" status as the auth signal itself and persists
-// a lightweight local session (not a real token) for navigation/auto-login
+// this treats a "success" status as the auth signal itself and persists a
+// lightweight local session (not a real token) for navigation/auto-login
 // purposes. The display name is derived from the email since the API doesn't
 // provide one.
-export function useAuth() {
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [booting, setBooting] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -57,5 +63,16 @@ export function useAuth() {
     setUser(null);
   }, []);
 
-  return { user, booting, loading, error, isAuthenticated: !!user, signIn, signOut };
+  const value = useMemo(
+    () => ({ user, booting, loading, error, isAuthenticated: !!user, signIn, signOut }),
+    [user, booting, loading, error, signIn, signOut],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
 }

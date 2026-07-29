@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getJadwalRuangan } from '../api/jadwal';
-import { getBookings } from '../api/booking';
+import { getBookings, updateBooking } from '../api/booking';
 import { toISODate } from '../utils/date';
 
 // ViewModel: merges two sources into one schedule list -
@@ -39,6 +39,10 @@ export function useJadwal() {
               waktu_selesai: it.waktu_selesai,
               nama_ruangan: it.nama_ruangan,
               tanggal: null,
+              jumlah_peserta: null,
+              status: null,
+              note: null,
+              bookingId: null,
             }))
           : [];
 
@@ -50,6 +54,10 @@ export function useJadwal() {
               waktu_selesai: b.jam_selesai,
               nama_ruangan: b.nama_ruangan,
               tanggal: b.tanggal,
+              jumlah_peserta: b.jumlah_peserta,
+              status: b.status ?? 'pending',
+              note: b.note ?? '',
+              bookingId: b.id,
             }))
           : [];
 
@@ -83,6 +91,16 @@ export function useJadwal() {
     [items],
   );
 
+  // Only items backed by our own booking API (bookingId != null) can be
+  // mutated - legacy jadwal entries have no id to patch against.
+  const updateItem = useCallback(
+    async (bookingId, payload) => {
+      await updateBooking(bookingId, payload);
+      await fetchJadwal();
+    },
+    [fetchJadwal],
+  );
+
   return {
     items,
     todayItems,
@@ -94,6 +112,7 @@ export function useJadwal() {
     setDateFilter,
     loading,
     error,
+    updateItem,
     refetch: fetchJadwal,
   };
 }
