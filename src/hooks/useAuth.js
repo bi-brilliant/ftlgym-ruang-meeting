@@ -1,30 +1,33 @@
 import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { login as loginRequest } from '../api/auth';
-import { setAuthToken } from '../api/client';
 
-const TOKEN_KEY = '@ruang_meeting_token';
-const USER_KEY = '@ruang_meeting_user';
+const SESSION_KEY = '@ruang_meeting_session';
+
+function displayNameFromEmail(email) {
+  const local = email.split('@')[0] ?? 'User';
+  return local.charAt(0).toUpperCase() + local.slice(1);
+}
 
 // ViewModel: handles auth state, exposes a clean interface to the View.
+//
+// NOTE: the UAT test login endpoint (`/test/login`) only returns
+// `{ status: "success", data: [] }` on valid credentials - no token, no user
+// object. There is nothing to send as a Bearer token to other endpoints, so
+// this hook treats a "success" status as the auth signal itself and persists
+// a lightweight local session (not a real token) for navigation/auto-login
+// purposes. The display name is derived from the email since the API doesn't
+// provide one.
 export function useAuth() {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
   const [booting, setBooting] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     (async () => {
-      const [storedToken, storedUser] = await Promise.all([
-        AsyncStorage.getItem(TOKEN_KEY),
-        AsyncStorage.getItem(USER_KEY),
-      ]);
-      if (storedToken) {
-        setAuthToken(storedToken);
-        setToken(storedToken);
-        setUser(storedUser ? JSON.parse(storedUser) : null);
-      }
+      const stored = await AsyncStorage.getItem(SESSION_KEY);
+      if (stored) setUser(JSON.parse(stored));
       setBooting(false);
     })();
   }, []);
@@ -34,21 +37,12 @@ export function useAuth() {
     setError(null);
     try {
       const data = await loginRequest(email, password);
-      // Response shape not confirmed until tested live against the real API -
-      // handle a few common shapes defensively instead of assuming one.
-      const resolvedToken = data.token ?? data.data?.token ?? data.access_token;
-      const resolvedUser = data.user ?? data.data?.user ?? data.data ?? null;
-
-      if (!resolvedToken) {
-        throw new Error('Login berhasil tapi token tidak ditemukan di response.');
+      if (data.status !== 'success') {
+        throw new Error(data.message ?? 'Login gagal');
       }
-
-      setAuthToken(resolvedToken);
-      await AsyncStorage.setItem(TOKEN_KEY, resolvedToken);
-      if (resolvedUser) await AsyncStorage.setItem(USER_KEY, JSON.stringify(resolvedUser));
-
-      setToken(resolvedToken);
-      setUser(resolvedUser);
+      const sessionUser = { name: displayNameFromEmail(email), role: 'Web Developer', email };
+      await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser));
+      setUser(sessionUser);
       return true;
     } catch (e) {
       setError(e.response?.data?.message ?? e.message ?? 'Login gagal');
@@ -59,11 +53,9 @@ export function useAuth() {
   }, []);
 
   const signOut = useCallback(async () => {
-    setAuthToken(null);
-    await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
-    setToken(null);
+    await AsyncStorage.removeItem(SESSION_KEY);
     setUser(null);
   }, []);
 
-  return { user, token, booting, loading, error, isAuthenticated: !!token, signIn, signOut };
+  return { user, booting, loading, error, isAuthenticated: !!user, signIn, signOut };
 }

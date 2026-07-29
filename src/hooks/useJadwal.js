@@ -1,17 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getJadwalRuangan } from '../api/jadwal';
 
-function isSameDay(dateStr, target) {
-  if (!dateStr) return false;
-  const d = new Date(dateStr);
-  return (
-    d.getFullYear() === target.getFullYear() &&
-    d.getMonth() === target.getMonth() &&
-    d.getDate() === target.getDate()
-  );
-}
-
 // ViewModel: fetches + normalizes schedule data, exposes filters to the View.
+//
+// NOTE: the real API response (`/test/jadwalruangan`) returns items shaped
+// like `{ waktu_mulai, waktu_selesai, nama_ruangan }` - no date field at all.
+// So "today's schedule" and the date filter can't actually filter by date
+// (there's nothing to filter against) - all items are shown regardless of
+// date. The date picker stays in the UI to match the design, but is
+// honestly non-functional against this data shape unless the API adds a
+// date field later.
 export function useJadwal() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,8 +22,7 @@ export function useJadwal() {
     setError(null);
     try {
       const data = await getJadwalRuangan();
-      // Response shape not confirmed until tested live - normalize defensively.
-      const list = data.data ?? data.items ?? data.jadwal ?? data ?? [];
+      const list = data.data ?? [];
       setItems(Array.isArray(list) ? list : []);
     } catch (e) {
       setError(e.response?.data?.message ?? e.message ?? 'Gagal memuat jadwal');
@@ -38,21 +35,16 @@ export function useJadwal() {
     fetchJadwal();
   }, [fetchJadwal]);
 
-  const todayItems = useMemo(
-    () => items.filter((it) => isSameDay(it.tanggal ?? it.date, new Date())),
-    [items],
-  );
+  // No date field in the API response - "today" is effectively "all".
+  const todayItems = items;
 
   const filteredItems = useMemo(() => {
-    return items.filter((it) => {
-      const matchesRoom = !roomFilter || (it.ruangan ?? it.room) === roomFilter;
-      const matchesDate = !dateFilter || isSameDay(it.tanggal ?? it.date, dateFilter);
-      return matchesRoom && matchesDate;
-    });
-  }, [items, roomFilter, dateFilter]);
+    if (!roomFilter) return items;
+    return items.filter((it) => it.nama_ruangan === roomFilter);
+  }, [items, roomFilter]);
 
   const roomOptions = useMemo(
-    () => [...new Set(items.map((it) => it.ruangan ?? it.room).filter(Boolean))],
+    () => [...new Set(items.map((it) => it.nama_ruangan).filter(Boolean))],
     [items],
   );
 

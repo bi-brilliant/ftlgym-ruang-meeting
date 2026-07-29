@@ -59,9 +59,9 @@ export default function ScheduleScreen({ navigation }) {
           contentContainerStyle={{ padding: 20 }}
           renderItem={({ item }) => (
             <ScheduleCard
-              startTime={item.jam_mulai ?? item.startTime}
-              endTime={item.jam_selesai ?? item.endTime}
-              room={item.ruangan ?? item.room}
+              startTime={item.waktu_mulai}
+              endTime={item.waktu_selesai}
+              room={item.nama_ruangan}
             />
           )}
           ListEmptyComponent={<Text style={styles.empty}>Tidak ada jadwal untuk filter ini.</Text>}
