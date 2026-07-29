@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
 
 export default function LoginScreen({ navigation }) {
@@ -50,7 +51,7 @@ export default function LoginScreen({ navigation }) {
             onChangeText={setPassword}
           />
           <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
-            <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁'}</Text>
+            <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#6B7280" />
           </TouchableOpacity>
         </View>
 
