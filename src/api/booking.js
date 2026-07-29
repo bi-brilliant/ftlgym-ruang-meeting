@@ -9,3 +9,8 @@ export async function getBookings() {
   const { data } = await mockClient.get('/booking');
   return data;
 }
+
+export async function updateBooking(id, payload) {
+  const { data } = await mockClient.patch(`/booking/${id}`, payload);
+  return data;
+}

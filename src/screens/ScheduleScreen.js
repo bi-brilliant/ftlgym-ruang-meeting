@@ -1,20 +1,35 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useJadwal } from '../hooks/useJadwal';
+import { useRuangan } from '../hooks/useRuangan';
 import ScheduleCard from '../components/ScheduleCard';
+import BookingDetailModal from '../components/BookingDetailModal';
+import { getRoomImageUri } from '../utils/images';
 
 function formatDate(d) {
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 export default function ScheduleScreen({ navigation }) {
-  const { filteredItems, roomOptions, roomFilter, setRoomFilter, dateFilter, setDateFilter, loading, error, refetch } =
-    useJadwal();
+  const {
+    filteredItems,
+    roomOptions,
+    roomFilter,
+    setRoomFilter,
+    dateFilter,
+    setDateFilter,
+    loading,
+    error,
+    refetch,
+    updateItem,
+  } = useJadwal();
+  const { rooms } = useRuangan();
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   // Reset filters on blur so re-entering this screen always starts from
   // "show everything, today" instead of whatever filter was left applied.
@@ -31,6 +46,49 @@ export default function ScheduleScreen({ navigation }) {
     const unsubscribe = navigation.addListener('focus', refetch);
     return unsubscribe;
   }, [navigation, refetch]);
+
+  const roomCapacity = useMemo(() => {
+    const map = {};
+    rooms.forEach((r) => {
+      map[r.nama_ruangan] = r.kapasitas;
+    });
+    return map;
+  }, [rooms]);
+
+  const handleItemPress = useCallback((item) => setSelectedItem(item), []);
+  const handleModalClose = useCallback(() => setSelectedItem(null), []);
+
+  const handleUpdateStatus = useCallback(
+    async (status) => {
+      if (!selectedItem?.bookingId) return;
+      await updateItem(selectedItem.bookingId, { status });
+      setSelectedItem((prev) => (prev ? { ...prev, status } : prev));
+    },
+    [selectedItem, updateItem],
+  );
+
+  const handleSaveNote = useCallback(
+    async (note) => {
+      if (!selectedItem?.bookingId) return;
+      await updateItem(selectedItem.bookingId, { note });
+      setSelectedItem((prev) => (prev ? { ...prev, note } : prev));
+    },
+    [selectedItem, updateItem],
+  );
+
+  const keyExtractor = useCallback((item, idx) => String(item.id ?? idx), []);
+
+  const renderItem = useCallback(
+    ({ item }) => (
+      <ScheduleCard
+        item={item}
+        image={getRoomImageUri(item.nama_ruangan)}
+        capacity={item.jumlah_peserta ?? roomCapacity[item.nama_ruangan] ?? null}
+        onPress={handleItemPress}
+      />
+    ),
+    [roomCapacity, handleItemPress],
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -66,25 +124,29 @@ export default function ScheduleScreen({ navigation }) {
         )}
       </View>
 
-      {loading ? (
-        <ActivityIndicator style={{ marginTop: 20 }} />
-      ) : error ? (
-        <Text style={styles.error}>{error}</Text>
-      ) : (
-        <FlatList
-          data={filteredItems}
-          keyExtractor={(item, idx) => String(item.id ?? idx)}
-          contentContainerStyle={{ padding: 20 }}
-          renderItem={({ item }) => (
-            <ScheduleCard
-              startTime={item.waktu_mulai}
-              endTime={item.waktu_selesai}
-              room={item.nama_ruangan}
-            />
-          )}
-          ListEmptyComponent={<Text style={styles.empty}>Tidak ada jadwal untuk filter ini.</Text>}
-        />
-      )}
+      <View style={styles.listArea}>
+        {loading ? (
+          <ActivityIndicator style={{ marginTop: 20 }} />
+        ) : error ? (
+          <Text style={styles.error}>{error}</Text>
+        ) : (
+          <FlatList
+            data={filteredItems}
+            keyExtractor={keyExtractor}
+            contentContainerStyle={{ padding: 20 }}
+            renderItem={renderItem}
+            ListEmptyComponent={<Text style={styles.empty}>Tidak ada jadwal untuk filter ini.</Text>}
+          />
+        )}
+      </View>
+
+      <BookingDetailModal
+        visible={!!selectedItem}
+        item={selectedItem}
+        onClose={handleModalClose}
+        onUpdateStatus={handleUpdateStatus}
+        onSaveNote={handleSaveNote}
+      />
     </SafeAreaView>
   );
 }
@@ -103,6 +165,7 @@ const styles = StyleSheet.create({
   filters: { paddingHorizontal: 20, paddingTop: 16, gap: 10 },
   pickerWrap: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, overflow: 'hidden' },
   dateButton: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, padding: 12, marginTop: 10 },
+  listArea: { flex: 1 },
   empty: { color: '#9CA3AF', fontSize: 13, textAlign: 'center', marginTop: 20 },
   error: { color: '#DC2626', fontSize: 13, textAlign: 'center', marginTop: 20 },
 });
