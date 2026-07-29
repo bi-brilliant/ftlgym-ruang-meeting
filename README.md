@@ -67,4 +67,3 @@ Keduanya dipanggil persis seperti aslinya - **tidak ada yang diubah atau di-mock
 - **Entri jadwal lama (dari API asli) tidak punya tanggal atau id** - tidak bisa difilter tanggal secara presisi (selalu tampil terlepas dari filter tanggal aktif) dan tidak bisa diedit/diubah statusnya di modal detail (ditampilkan read-only), karena memang tidak ada apa pun di API asli yang bisa di-patch.
 - **Kapasitas ruangan untuk entri jadwal lama** memakai fallback dari kapasitas umum ruangan via `/ruangan`, karena feed jadwal asli tidak melaporkan jumlah peserta sebenarnya.
 - **API booking custom bersifat in-memory** - data hilang kalau proses server di-restart. Cukup untuk demo/test; perlu datastore sungguhan untuk produksi.
-- Dibangun dan ditest terutama lewat Expo Go di Android; perilaku spacing/keyboard khusus iOS belum diverifikasi di perangkat iOS fisik.
