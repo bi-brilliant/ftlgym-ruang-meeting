@@ -15,9 +15,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 import { useRuangan } from '../hooks/useRuangan';
 import { submitBooking } from '../api/booking';
-import { showToast } from '../components/Toast';
 import { toISODate } from '../utils/date';
 
 const DIVISI_OPTIONS = ['IT', 'HR', 'Finance', 'Marketing', 'Operasional'];
@@ -83,7 +83,11 @@ export default function BookingScreen({ navigation }) {
       });
       setShowSuccess(true);
     } catch (e) {
-      showToast(e.response?.data?.message ?? e.message ?? 'Booking gagal diajukan.');
+      Toast.show({
+        type: 'error',
+        text1: 'Gagal',
+        text2: e.response?.data?.message ?? e.message ?? 'Booking gagal diajukan.',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -105,7 +109,11 @@ export default function BookingScreen({ navigation }) {
     setShowStartPicker(Platform.OS === 'ios');
     if (!d) return;
     if (isToday(tanggal) && d < new Date()) {
-      showToast('Waktu mulai meeting tidak boleh sebelum waktu sekarang.');
+      Toast.show({
+        type: 'error',
+        text1: 'Waktu tidak valid',
+        text2: 'Waktu mulai meeting tidak boleh sebelum waktu sekarang.',
+      });
       return;
     }
     setJamMulai(d);
@@ -115,7 +123,11 @@ export default function BookingScreen({ navigation }) {
     setShowEndPicker(Platform.OS === 'ios');
     if (!d) return;
     if (d <= jamMulai) {
-      showToast('Waktu selesai meeting harus setelah waktu mulai.');
+      Toast.show({
+        type: 'error',
+        text1: 'Waktu tidak valid',
+        text2: 'Waktu selesai meeting harus setelah waktu mulai.',
+      });
       return;
     }
     setJamSelesai(d);
