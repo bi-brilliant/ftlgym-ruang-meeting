@@ -1,15 +1,21 @@
-import { ActivityIndicator, FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
 import { useJadwal } from '../hooks/useJadwal';
 import ScheduleCard from '../components/ScheduleCard';
 
 export default function HomeScreen({ navigation }) {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { todayItems, loading, error } = useJadwal();
 
   const name = user?.name ?? user?.nama ?? 'Yosi';
   const role = user?.role ?? user?.jabatan ?? 'Web Developer';
+
+  const handleLogout = async () => {
+    await signOut();
+    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -17,10 +23,13 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text>
         </View>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.name}>{name}</Text>
           <Text style={styles.role}>{role}</Text>
         </View>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+          <Ionicons name="log-out-outline" size={22} color="#DC2626" />
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.sectionTitle}>Jadwal Ruang Meeting Hari Ini</Text>
@@ -71,6 +80,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   avatarText: { fontWeight: '700', color: '#4338CA', fontSize: 16 },
+  logoutButton: { padding: 6 },
   name: { fontWeight: '700', fontSize: 15, color: '#1F2937' },
   role: { fontSize: 12, color: '#6B7280' },
   sectionTitle: { fontWeight: '700', fontSize: 13, marginBottom: 10, color: '#1F2937' },

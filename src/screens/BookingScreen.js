@@ -1,5 +1,17 @@
 import { useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +24,10 @@ function formatDate(d) {
 }
 function formatTime(d) {
   return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+}
+function isToday(d) {
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
 }
 
 export default function BookingScreen({ navigation }) {
@@ -28,6 +44,8 @@ export default function BookingScreen({ navigation }) {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const canSubmit = ruangan.length > 0 && jumlahPeserta.length > 0;
+
   // NOTE: belum ada endpoint submit booking yang terkonfirmasi dari desain -
   // untuk sekarang submit di-mock (tidak hit API), tampilkan alert sukses.
   const handleSubmit = () => {
@@ -41,8 +59,33 @@ export default function BookingScreen({ navigation }) {
     setJumlahPeserta(text.replace(/[^0-9]/g, ''));
   };
 
+  const handleTanggalChange = (_, d) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (d) setTanggal(d);
+  };
+
+  const handleJamMulaiChange = (_, d) => {
+    setShowStartPicker(Platform.OS === 'ios');
+    if (!d) return;
+    if (isToday(tanggal) && d < new Date()) {
+      Alert.alert('Waktu tidak valid', 'Waktu mulai meeting tidak boleh sebelum waktu sekarang.');
+      return;
+    }
+    setJamMulai(d);
+  };
+
+  const handleJamSelesaiChange = (_, d) => {
+    setShowEndPicker(Platform.OS === 'ios');
+    if (!d) return;
+    if (d <= jamMulai) {
+      Alert.alert('Waktu tidak valid', 'Waktu selesai meeting harus setelah waktu mulai.');
+      return;
+    }
+    setJamSelesai(d);
+  };
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={22} color="#1F2937" />
@@ -50,84 +93,78 @@ export default function BookingScreen({ navigation }) {
         <Text style={styles.headerTitle}>Booking Ruang Meeting</Text>
       </View>
 
-      <ScrollView style={styles.form}>
-        <Text style={styles.label}>Divisi</Text>
-        <View style={styles.pickerWrap}>
-          <Picker selectedValue={divisi} onValueChange={setDivisi}>
-            {DIVISI_OPTIONS.map((d) => (
-              <Picker.Item key={d} label={d} value={d} />
-            ))}
-          </Picker>
-        </View>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <ScrollView style={styles.form} keyboardShouldPersistTaps="handled">
+          <Text style={styles.label}>Divisi</Text>
+          <View style={styles.pickerWrap}>
+            <Picker selectedValue={divisi} onValueChange={setDivisi}>
+              {DIVISI_OPTIONS.map((d) => (
+                <Picker.Item key={d} label={d} value={d} />
+              ))}
+            </Picker>
+          </View>
 
-        <Text style={styles.label}>Ruang Meeting</Text>
-        <View style={styles.pickerWrap}>
-          <Picker selectedValue={ruangan} onValueChange={setRuangan}>
-            <Picker.Item label="Pilih ruangan..." value="" />
-            {roomOptions.map((r) => (
-              <Picker.Item key={r} label={r} value={r} />
-            ))}
-          </Picker>
-        </View>
+          <Text style={styles.label}>Ruang Meeting</Text>
+          <View style={styles.pickerWrap}>
+            <Picker selectedValue={ruangan} onValueChange={setRuangan}>
+              <Picker.Item label="Pilih ruangan..." value="" />
+              {roomOptions.map((r) => (
+                <Picker.Item key={r} label={r} value={r} />
+              ))}
+            </Picker>
+          </View>
 
-        <Text style={styles.label}>Tanggal Meeting</Text>
-        <TouchableOpacity style={styles.fieldButton} onPress={() => setShowDatePicker(true)}>
-          <Text>{formatDate(tanggal)}</Text>
-        </TouchableOpacity>
-        {showDatePicker && (
-          <DateTimePicker
-            value={tanggal}
-            mode="date"
-            onChange={(_, d) => {
-              setShowDatePicker(Platform.OS === 'ios');
-              if (d) setTanggal(d);
-            }}
+          <Text style={styles.label}>Tanggal Meeting</Text>
+          <TouchableOpacity style={styles.fieldButton} onPress={() => setShowDatePicker(true)}>
+            <Text>{formatDate(tanggal)}</Text>
+          </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker value={tanggal} mode="date" minimumDate={new Date()} onChange={handleTanggalChange} />
+          )}
+
+          <Text style={styles.label}>Waktu Mulai Meeting</Text>
+          <TouchableOpacity style={styles.fieldButton} onPress={() => setShowStartPicker(true)}>
+            <Text>{formatTime(jamMulai)}</Text>
+          </TouchableOpacity>
+          {showStartPicker && (
+            <DateTimePicker
+              value={jamMulai}
+              mode="time"
+              minimumDate={isToday(tanggal) ? new Date() : undefined}
+              onChange={handleJamMulaiChange}
+            />
+          )}
+
+          <Text style={styles.label}>Waktu Selesai Meeting</Text>
+          <TouchableOpacity style={styles.fieldButton} onPress={() => setShowEndPicker(true)}>
+            <Text>{formatTime(jamSelesai)}</Text>
+          </TouchableOpacity>
+          {showEndPicker && (
+            <DateTimePicker value={jamSelesai} mode="time" minimumDate={jamMulai} onChange={handleJamSelesaiChange} />
+          )}
+
+          <Text style={styles.label}>Jumlah Peserta</Text>
+          <TextInput
+            style={styles.fieldButton}
+            keyboardType="number-pad"
+            value={jumlahPeserta}
+            onChangeText={handleJumlahPesertaChange}
+            placeholder="Contoh: 10"
           />
-        )}
 
-        <Text style={styles.label}>Waktu Mulai Meeting</Text>
-        <TouchableOpacity style={styles.fieldButton} onPress={() => setShowStartPicker(true)}>
-          <Text>{formatTime(jamMulai)}</Text>
-        </TouchableOpacity>
-        {showStartPicker && (
-          <DateTimePicker
-            value={jamMulai}
-            mode="time"
-            onChange={(_, d) => {
-              setShowStartPicker(Platform.OS === 'ios');
-              if (d) setJamMulai(d);
-            }}
-          />
-        )}
-
-        <Text style={styles.label}>Waktu Selesai Meeting</Text>
-        <TouchableOpacity style={styles.fieldButton} onPress={() => setShowEndPicker(true)}>
-          <Text>{formatTime(jamSelesai)}</Text>
-        </TouchableOpacity>
-        {showEndPicker && (
-          <DateTimePicker
-            value={jamSelesai}
-            mode="time"
-            onChange={(_, d) => {
-              setShowEndPicker(Platform.OS === 'ios');
-              if (d) setJamSelesai(d);
-            }}
-          />
-        )}
-
-        <Text style={styles.label}>Jumlah Peserta</Text>
-        <TextInput
-          style={styles.fieldButton}
-          keyboardType="number-pad"
-          value={jumlahPeserta}
-          onChangeText={handleJumlahPesertaChange}
-          placeholder="Contoh: 10"
-        />
-
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitText}>Submit</Text>
-        </TouchableOpacity>
-      </ScrollView>
+          <TouchableOpacity
+            style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={!canSubmit}
+          >
+            <Text style={[styles.submitText, !canSubmit && styles.submitTextDisabled]}>Submit</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <Modal transparent visible={showSuccess} animationType="fade">
         <View style={styles.modalOverlay}>
@@ -147,7 +184,7 @@ export default function BookingScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -160,8 +197,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  back: { fontSize: 20, marginRight: 12 },
-  headerTitle: { fontWeight: '700', fontSize: 15, color: '#1F2937' },
+  headerTitle: { fontWeight: '700', fontSize: 15, color: '#1F2937', marginLeft: 12 },
   form: { padding: 20 },
   label: { fontSize: 12, color: '#6B7280', marginBottom: 4, marginTop: 12 },
   pickerWrap: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8, overflow: 'hidden' },
@@ -180,7 +216,9 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 40,
   },
+  submitButtonDisabled: { backgroundColor: '#D1D5DB' },
   submitText: { color: '#fff', fontWeight: '600' },
+  submitTextDisabled: { color: '#6B7280' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
   modalCard: {
     backgroundColor: '#fff',
