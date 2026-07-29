@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +17,7 @@ export default function ScheduleScreen({ navigation }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={22} color="#1F2937" />
@@ -68,7 +69,7 @@ export default function ScheduleScreen({ navigation }) {
           ListEmptyComponent={<Text style={styles.empty}>Tidak ada jadwal untuk filter ini.</Text>}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
