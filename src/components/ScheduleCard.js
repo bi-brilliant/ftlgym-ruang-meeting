@@ -46,6 +46,10 @@ function ScheduleCard({ item, image, capacity, onPress }) {
           <Ionicons name="person-outline" size={14} color="#6B7280" />
           <Text style={styles.rowText}>{capacity != null ? `${capacity} orang` : '-'}</Text>
         </View>
+        <View style={styles.row}>
+          <Ionicons name="briefcase-outline" size={14} color="#6B7280" />
+          <Text style={styles.rowText}>{item.divisi ?? 'Divisi tidak tersedia'}</Text>
+        </View>
       </View>
       <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
     </TouchableOpacity>
